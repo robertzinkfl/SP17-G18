@@ -1,0 +1,14 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+[remote "origin"]
+	url = http://gitlab.cs.fsu.edu/wkyu/oslight.git
+	fetch = +refs/heads/*:refs/remotes/origin/*
+[branch "master"]
+	remote = ospp17
+	merge = refs/heads/master
+[remote "ospp17"]
+	url = http://gitlab.cs.fsu.edu/SP17-G18/ospp17.git
+	fetch = +refs/heads/*:refs/remotes/ospp17/*
