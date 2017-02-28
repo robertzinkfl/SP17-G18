@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 2000, 2001, 2002, 2003, 2004, 2005, 2008, 2009
  *	The President and Fellows of Harvard College.
@@ -158,6 +159,12 @@ lock_create(const char *name)
 
         // add stuff here as needed
 
+	lock->lock_wchan = wchan_create(lock->lk_name);
+
+	spinlock_init(&lock->lock_spinlock);
+	lock->is_held = false;
+	lock->holder = NULL;
+
         return lock;
 }
 
@@ -167,6 +174,12 @@ lock_destroy(struct lock *lock)
         KASSERT(lock != NULL);
 
         // add stuff here as needed
+
+	spinlock_cleanup(&lock->lock_spinlock);
+	wchan_destroy(lock->lock_wchan);
+
+	lock->holder = NULL;
+	lock->is_held = false;
 
         kfree(lock->lk_name);
         kfree(lock);
@@ -180,7 +193,22 @@ lock_acquire(struct lock *lock)
 
         // Write this
 
-        (void)lock;  // suppress warning until code gets written
+	spinlock_acquire(&lock->lock_spinlock);
+
+	while(lock->is_held)
+	{
+		spinlock_acquire(&lock->lock_spinlock);
+		spinlock_release(&lock->lock_spinlock);
+		wchan_sleep(lock->lock_wchan, &lock->lock_spinlock);
+		spinlock_acquire(&lock->lock_spinlock);
+	}
+
+	lock->is_held = true;
+	lock->holder = curthread;
+
+	spinlock_release(&lock->lock_spinlock);
+
+        // (void)lock;  // suppress warning until code gets written
 
 	/* Call this once the lock is acquired */
 	//HANGMAN_ACQUIRE(&curthread->t_hangman, &lock->lk_hangman);
@@ -194,7 +222,19 @@ lock_release(struct lock *lock)
 
         // Write this
 
-        (void)lock;  // suppress warning until code gets written
+	spinlock_acquire(&lock->lock_spinlock);
+
+	if(lock_do_i_hold(lock))
+	{
+		lock->is_held = false;
+		wchan_wakeone(lock->lock_wchan, &lock->lock_spinlock);
+	}
+
+	spinlock_release(&lock->lock_spinlock);
+
+	// KASSERT(!lock->locked);
+
+        // (void)lock;  // suppress warning until code gets written
 }
 
 bool
@@ -202,9 +242,13 @@ lock_do_i_hold(struct lock *lock)
 {
         // Write this
 
-        (void)lock;  // suppress warning until code gets written
+	if(lock->holder == curthread)
+		return true;
+	else return false;
 
-        return true; // dummy until code gets written
+        // (void)lock;  // suppress warning until code gets written
+
+        // return true; // dummy until code gets written
 }
 
 ////////////////////////////////////////////////////////////

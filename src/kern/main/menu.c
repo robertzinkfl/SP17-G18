@@ -546,7 +546,7 @@ cmd_mainmenu(int n, char **a)
 
 static
 int
-cmd_helloworld(int n, char **a)
+cmd_helloworld()
 {
 	kprintf("Hello world!\n");
 	return 0;
