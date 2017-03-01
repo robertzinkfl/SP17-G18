@@ -159,7 +159,7 @@ lock_create(const char *name)
 
         // add stuff here as needed
 
-	lock->lock_wchan = wchan_create(lock->lk_name);
+	lock->wc = wchan_create(lock->lk_name);
 
 	spinlock_init(&lock->lock_spinlock);
 	lock->is_held = false;
@@ -176,7 +176,7 @@ lock_destroy(struct lock *lock)
         // add stuff here as needed
 
 	spinlock_cleanup(&lock->lock_spinlock);
-	wchan_destroy(lock->lock_wchan);
+	wchan_destroy(lock->wc);
 
 	lock->holder = NULL;
 	lock->is_held = false;
@@ -197,9 +197,10 @@ lock_acquire(struct lock *lock)
 
 	while(lock->is_held)
 	{
-		spinlock_acquire(&lock->lock_spinlock);
+		spinlock_acquire(&lock->wc_spinlock);
 		spinlock_release(&lock->lock_spinlock);
-		wchan_sleep(lock->lock_wchan, &lock->lock_spinlock);
+		wchan_sleep(lock->wc, &lock->wc_spinlock);
+		spinlock_release(&lock->wc_spinlock);
 		spinlock_acquire(&lock->lock_spinlock);
 	}
 
@@ -227,7 +228,7 @@ lock_release(struct lock *lock)
 	if(lock_do_i_hold(lock))
 	{
 		lock->is_held = false;
-		wchan_wakeone(lock->lock_wchan, &lock->lock_spinlock);
+		wchan_wakeone(lock->wc, &lock->lock_spinlock);
 	}
 
 	spinlock_release(&lock->lock_spinlock);
