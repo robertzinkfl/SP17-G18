@@ -219,7 +219,7 @@ void
 lock_release(struct lock *lock)
 {
 	/* Call this when the lock is released */
-	HANGMAN_RELEASE(&curthread->t_hangman, &lock->lk_hangman);
+//	HANGMAN_RELEASE(&curthread->t_hangman, &lock->lk_hangman);
 
         // Write this
 
@@ -228,6 +228,7 @@ lock_release(struct lock *lock)
 	if(lock_do_i_hold(lock))
 	{
 		lock->is_held = false;
+		lock->holder = NULL; //
 		wchan_wakeone(lock->wc, &lock->lock_spinlock);
 	}
 
@@ -308,11 +309,11 @@ cv_wait(struct cv *cv, struct lock *lock)
 
 	KASSERT(cv != NULL);
 	KASSERT(lock != NULL);
-
+	
+	spinlock_acquire(&cv->cv_spinlock);
 	if(lock_do_i_hold(lock))
 	{
 		lock_release(lock);
-		spinlock_acquire(&cv->cv_spinlock);
 		wchan_sleep(cv->cv_wchan, &cv->cv_spinlock);
 		spinlock_release(&cv->cv_spinlock);
 		lock_acquire(lock);
