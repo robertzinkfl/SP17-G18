@@ -219,7 +219,7 @@ void
 lock_release(struct lock *lock)
 {
 	/* Call this when the lock is released */
-	//HANGMAN_RELEASE(&curthread->t_hangman, &lock->lk_hangman);
+	HANGMAN_RELEASE(&curthread->t_hangman, &lock->lk_hangman);
 
         // Write this
 
@@ -294,7 +294,7 @@ cv_destroy(struct cv *cv)
         KASSERT(cv != NULL);
 
         // add stuff here as needed
-
+	spinlock_cleanup(&cv->cv_spinlock);
 	wchan_destroy(cv->cv_wchan);
 
         kfree(cv->cv_name);
@@ -311,9 +311,10 @@ cv_wait(struct cv *cv, struct lock *lock)
 
 	if(lock_do_i_hold(lock))
 	{
-		spinlock_acquire(cv->cv_spinlock);
 		lock_release(lock);
-		wchan_sleep(cv->cv_wchan, cv->cv_spinlock);
+		spinlock_acquire(&cv->cv_spinlock);
+		wchan_sleep(cv->cv_wchan, &cv->cv_spinlock);
+		spinlock_release(&cv->cv_spinlock);
 		lock_acquire(lock);
 	}
 
@@ -331,8 +332,10 @@ cv_signal(struct cv *cv, struct lock *lock)
 
 	if(lock_do_i_hold(lock))
 	{
-		wchan_wakeone(cv->cv_wchan, cv->cv_spinlock);
-	}
+		spinlock_acquire(&cv->cv_spinlock);
+		wchan_wakeone(cv->cv_wchan, &cv->cv_spinlock);
+		spinlock_release(&cv->cv_spinlock);
+}
 
 	// (void)cv;    // suppress warning until code gets written
 	// (void)lock;  // suppress warning until code gets written
@@ -348,14 +351,16 @@ cv_broadcast(struct cv *cv, struct lock *lock)
 
 	if(lock_do_i_hold(lock))
 	{
-		wchan_wakeall(cv->cv_wchan, cv->cv_spinlock);
+			spinlock_acquire(&cv->cv_spinlock);
+			wchan_wakeall(cv->cv_wchan, &cv->cv_spinlock);
+			spinlock_release(&cv->cv_spinlock);
 	}
-//	else
-//	{
-//		lock_acquire(lock);
-//		wchan_wakeall(cv->cv_wchan);
-//		lock_release(lock);
-//	}
+	//else
+	//{
+	//	lock_acquire(lock);
+	//	wchan_wakeall(cv->cv_wchan, &cv->cv_spinlock);
+		//lock_release(lock);
+	//}
 
 	// (void)cv;    // suppress warning until code gets written
 	// (void)lock;  // suppress warning until code gets written
