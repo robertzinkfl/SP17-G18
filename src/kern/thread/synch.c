@@ -189,7 +189,7 @@ void
 lock_acquire(struct lock *lock)
 {
 	/* Call this before waiting for a lock */
-	//HANGMAN_WAIT(&curthread->t_hangman, &lock->lk_hangman);
+//	HANGMAN_WAIT(&curthread->t_hangman, &lock->lk_hangman);
 
         // Write this
 

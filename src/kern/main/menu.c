@@ -500,6 +500,7 @@ static const char *testmenu[] = {
 	"[fs4] FS write stress 2             ",
 	"[fs5] FS long stress                ",
 	"[fs6] FS create stress              ",
+	"[a1t] ASST1 Tests		     ",
 	NULL
 };
 
@@ -604,6 +605,7 @@ static struct {
 	{ "tt1",	threadtest },
 	{ "tt2",	threadtest2 },
 	{ "tt3",	threadtest3 },
+	{ "a1t",	asst1_tests },
 	{ "sy1",	semtest },
 
 	/* synchronization assignment tests */
